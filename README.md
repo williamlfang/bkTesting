@@ -2,9 +2,10 @@
 
 > China Stocks: Strategy BackTesting Project
 
-这是一个中国股票日频策略的量化回测目(BackTesting)的项目，主要用于：
+这是一个中国股票日频策略的量化回测(BackTesting)的项目，主要用于：
 
 - 测试股票的策略指标
+- 拼盘
 - 绘制基金净值曲线
 - 风险预警
 
