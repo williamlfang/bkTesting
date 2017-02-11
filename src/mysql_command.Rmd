@@ -1,0 +1,162 @@
+---
+title: "MySQL 命令"
+output: html_document
+---
+
+> 用于建立`Wind` 日行情数据
+
+
+# 'dev.wind_2000'
+
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## dev.wind_2000                                                              ## dev.wind_2000
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CREATE TABLE dev.wind_2000(
+    #--- CHINA STOCK INFORMATION ------------------------
+    TRADE_DT            DATE           NOT NULL,
+    S_INFO_WINDCODE     VARCHAR(20)    NOT NULL,
+    S_DQ_OPEN           decimal(20,4)  NULL,
+    S_DQ_HIGH           decimal(20,4)  NULL,
+    S_DQ_LOW            decimal(20,4)  NULL,
+    S_DQ_CLOSE          decimal(20,4)  NULL,
+    S_DQ_VOLUME         decimal(20,4)  NULL,
+    S_DQ_AMOUNT         decimal(20,4)  NULL,
+    S_DQ_ADJFACTOR      decimal(10,4)  NULL,
+    #--- KEY SETTING ------------------------------------
+    PRIMARY KEY(TRADE_DT, S_INFO_WINDCODE)
+    )DEFAULT CHARSET=utf8;
+
+INSERT INTO dev.wind_2000
+  SELECT TRADE_DT, S_INFO_WINDCODE,
+         S_DQ_OPEN,S_DQ_HIGH,S_DQ_LOW,S_DQ_CLOSE,
+         S_DQ_VOLUME,S_DQ_AMOUNT,S_DQ_ADJFACTOR
+  FROM china_stock_bar.ASHAREEODPRICES
+  WHERE TRADE_DT >= 20000101; 
+
+CREATE INDEX index_wind_2000
+  ON dev.wind_2000 
+  (TRADE_DT, S_INFO_WINDCODE); 
+
+ALTER TABLE dev.wind_2000
+    PARTITION BY RANGE( YEAR(TRADE_DT) )(
+    #---------------------------------------------------------------------------
+    PARTITION p_2000 VALUES LESS THAN (2001),
+    PARTITION p_2001 VALUES LESS THAN (2002),
+    PARTITION p_2002 VALUES LESS THAN (2003),
+    PARTITION p_2003 VALUES LESS THAN (2004),
+    PARTITION p_2004 VALUES LESS THAN (2005),
+    PARTITION p_2005 VALUES LESS THAN (2006),
+    PARTITION p_2006 VALUES LESS THAN (2007),
+    PARTITION p_2007 VALUES LESS THAN (2008),
+    PARTITION p_2008 VALUES LESS THAN (2009),
+    PARTITION p_2009 VALUES LESS THAN (2010),
+    PARTITION p_2010 VALUES LESS THAN (2011),
+    PARTITION p_2011 VALUES LESS THAN (2012),
+    PARTITION p_2012 VALUES LESS THAN (2013),
+    PARTITION p_2013 VALUES LESS THAN (2014),
+    PARTITION p_2014 VALUES LESS THAN (2015),
+    PARTITION p_2015 VALUES LESS THAN (2016),
+    PARTITION p_2016 VALUES LESS THAN (2017),
+    PARTITION p_2017 VALUES LESS THAN (2018),
+    PARTITION p_2018 VALUES LESS THAN (2019),
+    #---------------------------------------------------------------------------
+    PARTITION p_2019 VALUES LESS THAN (2020)
+    );
+
+
+# 'dev.wind_daily'
+
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## dev.wind_daily                                                             ## dev.wind_daily
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CREATE TABLE dev.wind_daily(
+    #--- CHINA STOCK INFORMATION ------------------------
+    TradingDay     DATE           NOT NULL,
+    stockID        VARCHAR(20)    NOT NULL,
+    open           decimal(20,4)  NULL,
+    high           decimal(20,4)  NULL,
+    low            decimal(20,4)  NULL,
+    close          decimal(20,4)  NULL,
+    volume         decimal(20,4)  NULL,
+    turover        decimal(20,4)  NULL,
+    adjFactor      decimal(10,4)  NULL,
+    #--- KEY SETTING ------------------------------------
+    PRIMARY KEY (TradingDay,stockID)
+    )DEFAULT CHARSET=utf8;
+    
+    DESCRIBE dev.wind_daily;
+
+CREATE INDEX index_wind_daily
+  ON dev.wind_daily 
+  (TradingDay, stockID); 
+
+# PARTITION
+
+ALTER TABLE dev.wind_daily
+    PARTITION BY RANGE( YEAR(TradingDay) )(
+    #---------------------------------------------------------------------------
+    PARTITION p_2000 VALUES LESS THAN (2001),
+    PARTITION p_2001 VALUES LESS THAN (2002),
+    PARTITION p_2002 VALUES LESS THAN (2003),
+    PARTITION p_2003 VALUES LESS THAN (2004),
+    PARTITION p_2004 VALUES LESS THAN (2005),
+    PARTITION p_2005 VALUES LESS THAN (2006),
+    PARTITION p_2006 VALUES LESS THAN (2007),
+    PARTITION p_2007 VALUES LESS THAN (2008),
+    PARTITION p_2008 VALUES LESS THAN (2009),
+    PARTITION p_2009 VALUES LESS THAN (2010),
+    PARTITION p_2010 VALUES LESS THAN (2011),
+    PARTITION p_2011 VALUES LESS THAN (2012),
+    PARTITION p_2012 VALUES LESS THAN (2013),
+    PARTITION p_2013 VALUES LESS THAN (2014),
+    PARTITION p_2014 VALUES LESS THAN (2015),
+    PARTITION p_2015 VALUES LESS THAN (2016),
+    PARTITION p_2016 VALUES LESS THAN (2017),
+    PARTITION p_2017 VALUES LESS THAN (2018),
+    PARTITION p_2018 VALUES LESS THAN (2019),
+    #---------------------------------------------------------------------------
+    PARTITION p_2019 VALUES LESS THAN (2020)
+    );
+
+# MAXadjFactor 
+
+CREATE TABLE dev.MAXadjFactor(
+    #--- MAX ADJ_FACTOR INFORMATION ---------------------
+    stockID        VARCHAR(20)    NOT NULL,
+    maxadjFactor   decimal(10,4)  NOT NULL
+    #--- KEY SETTING ------------------------------------
+    )DEFAULT CHARSET=utf8;
+    
+    DESCRIBE dev.MAXadjFactor;
+
+INSERT INTO dev.MAXadjFactor(stockID, MAXadjFactor) 
+  SELECT S_INFO_WINDCODE AS stockID,
+         max(S_DQ_ADJFACTOR) AS maxadjFactor
+  FROM china_stock_bar.ASHAREEODPRICES 
+  GROUP BY S_INFO_WINDCODE;
+
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## dev.wind_daily                                                             ## dev.wind_daily
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Update dev.wind_daily
+
+INSERT INTO dev.wind_daily 
+  SELECT a.TRADE_DT AS TradingDay, 
+       a.S_INFO_WINDCODE,
+       (a.S_DQ_OPEN * a.S_DQ_ADJFACTOR / b.maxadjFactor),
+       (a.S_DQ_HIGH * a.S_DQ_ADJFACTOR / b.maxadjFactor),
+       (a.S_DQ_LOW * a.S_DQ_ADJFACTOR  / b.maxadjFactor),
+       (a.S_DQ_CLOSE * a.S_DQ_ADJFACTOR / b.maxadjFactor),
+       a.S_DQ_VOLUME, 
+       a.S_DQ_AMOUNT * 1000,   ## Wind 是以 1000 来计算的
+       a.S_DQ_ADJFACTOR
+  FROM dev.wind_2000 as a,
+       dev.MAXadjFactor as b
+  WHERE a.S_INFO_WINDCODE = b.stockID;
+
+
+
+
