@@ -159,4 +159,27 @@ INSERT INTO dev.wind_daily
 
 
 
+# Backup dev.wind_daily
 
+> # 备份
+> mysqldump -u fl -pabc@123 dev wind_daily > wind_daily.sql
+> # 恢复
+> mysqldump -u fl -pabc@123 dev < wind_daily.sql
+> 或者进入 mysql 数据库后
+> source C:\cygwin64\home\Administrator\wind_daily.sql
+> 
+> # scp 从远程下载文件
+> scp -P 46250 fl@hi-cloud.imwork.net:/home/fl/wind_daily.sql wind_daily.sql
+
+
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## dev.fl_temp                                                                ## dev.fl_temp
+################################################################################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CREATE TABLE dev.fl_temp(
+    #--- MAX ADJ_FACTOR INFORMATION ---------------------
+    Exchange_Date     DATE           NOT NULL,
+    Date              DATE           NOT NULL,
+    Code              VARCHAR(20)    NOT NULL,
+    #--- KEY SETTING ------------------------------------
+    PRIMARY KEY (Exchange_Date,Code)
+    )DEFAULT CHARSET=utf8;
